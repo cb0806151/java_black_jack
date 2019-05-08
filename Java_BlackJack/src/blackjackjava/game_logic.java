@@ -1,8 +1,4 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
+
 package blackjackjava;
 
 import java.io.File;
@@ -18,7 +14,7 @@ import javafx.beans.property.StringProperty;
 
 /**
  *
- * @author Raxsus
+ * @author Christopher Baunach
  */
 public class game_logic {
     public IntegerProperty playerWins = new SimpleIntegerProperty(0);
@@ -42,6 +38,7 @@ public class game_logic {
     }
     
     public void retrieveDeck(int deckMultiplier) {
+        // retrieves a copy of the deck plus x additional decks
         File cardFolder = new File(cardImageFolderPath);
         currentDeck = new ArrayList<String>(Arrays.asList(cardFolder.list()));
         while (deckMultiplier > 0) {
@@ -52,6 +49,7 @@ public class game_logic {
     }
     
     public boolean haltGame(boolean winLossGame, String winner, String loser) {
+        // ends the game, displays the win message, gives a point to the winner, and disabled the stand and hit buttons
         if (winLossGame) {
             if ("The House".equals(winner)) {
                 dealerWins.set(dealerWins.get()+1);
@@ -67,6 +65,7 @@ public class game_logic {
     }
     
     public boolean checkForWinner(ArrayList<String> hand) {
+        // checks for the winner and ends the game if someone has won
         int mainHandMax = dealersHandMax;
         int otherHandMax = playersHandMax;
         int mainHandMin = dealersHandMin;
@@ -114,6 +113,7 @@ public class game_logic {
     }
     
     public void increaseHandValue(ArrayList<String> hand, String topCard) {
+        // increases the hand max and min values
         Integer valueOfHandsLastCard = Integer.valueOf(topCard.substring(0, 2));
         if (hand == playersHand) {
             if (valueOfHandsLastCard == 1) {

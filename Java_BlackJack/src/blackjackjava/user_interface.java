@@ -1,18 +1,12 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
+
 package blackjackjava;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import javafx.application.Application;
-import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.geometry.Pos;
-import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.GridPane;
@@ -25,7 +19,7 @@ import javax.swing.JOptionPane;
 
 /**
  *
- * @author Raxsus
+ * @author Christopher Baunach
  */
 public class user_interface extends Application {
     public game_logic logic = new game_logic();
@@ -42,6 +36,7 @@ public class user_interface extends Application {
     public Text message = new Text("");
     
     protected GridPane createGameScene() {
+        // create the option menu and the gridpane that will hold it
         GridPane containerHolder = new GridPane();
         VBox optionMenu = new VBox();
         
@@ -79,6 +74,7 @@ public class user_interface extends Application {
     }
     
     public void setListenerForEndOfGame() {
+        // listens to see if the buttons have been disabled, denoting that the game has ended
         logic.hitAndStandButtonsDisabled.addListener(new ChangeListener<Boolean>() {
             @Override
             public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
@@ -90,6 +86,7 @@ public class user_interface extends Application {
     }
     
     public void showDealersHand() {
+        // displays the dealers hand
         dealersCards.getChildren().clear();
         for (int i=0; i<logic.dealersHand.size(); i++) {
             ImageView tempCard = new ImageView(logic.cardImageFolderName + "/" + logic.dealersHand.get(i));
@@ -100,6 +97,7 @@ public class user_interface extends Application {
     }
     
     public boolean dealCard(ArrayList<String> hand, StackPane handContainer) {
+        // deals a card, increases the hand value accordingly, and checks for a winner
         String topCard = logic.currentDeck.get(0);
         hand.add(topCard);
         logic.currentDeck.remove(0);
@@ -119,6 +117,7 @@ public class user_interface extends Application {
     }
     
     public void dealersTurn() {
+        // the dealers draws until they either win or lose
         if (!standButton.isDisabled()) {
             dealCard(logic.dealersHand, dealersCards);
             dealersTurn();
@@ -126,6 +125,8 @@ public class user_interface extends Application {
     }
     
     public void startGame() {
+        // starts (or restarts the game) by resetting all necessary variables 
+        // and then drawing two cards for the player and the dealer
         logic.retrieveDeck(logic.numberOfExtraDecks);
         logic.playerStanding = false;
         logic.hitAndStandButtonsDisabled.set(false);
@@ -150,6 +151,7 @@ public class user_interface extends Application {
     }
     
     public VBox createCardContainer(Text containerTitle, StackPane cardPane, Text winCount) {
+        // creates a card container according to the specified parameters
         VBox cardContainer = new VBox();
         HBox titleContainer = new HBox();
         titleContainer.getChildren().addAll(Arrays.asList(containerTitle, winCount));
@@ -164,6 +166,8 @@ public class user_interface extends Application {
     }
     
     public void promptUserForNumberOfDecks() {
+        // prompts the users for the number of decks they will be using and 
+        // reruns itself if the user enters invalid input
         while (logic.numberOfExtraDecks < 0) {
             String numberOfDecks = JOptionPane.showInputDialog("How many extra decks would you like for these games of blackjack?\n(you may enter zero for just one deck)");
             try {
