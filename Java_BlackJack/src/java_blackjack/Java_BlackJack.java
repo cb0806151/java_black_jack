@@ -22,6 +22,7 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
+import javax.swing.JOptionPane;
 
 /**
  *
@@ -29,10 +30,13 @@ import javafx.stage.Stage;
  */
 public class Java_BlackJack extends Application {
     public int walletCount = 100;
+    public int playerWins = 0;
+    public int dealerWins = 0;
     public int playersHandMax = 0;
     public int playersHandMin = 0;
     public int dealersHandMax = 0;
     public int dealersHandMin = 0;
+    public boolean playerStanding = false;
     public String cardImageFolderPath = "src/cardImages";
     public String cardImageFolderName = "cardImages";
     public ArrayList<String> playersHand = new ArrayList<String>();
@@ -41,15 +45,23 @@ public class Java_BlackJack extends Application {
     public StackPane playersCards = new StackPane();
     public StackPane dealersCards = new StackPane();
     public Text playerTitle = new Text("You");
-    Text dealersTitle = new Text("The Dealer");
+    public Text dealersTitle = new Text("The Dealer");
+    public Text playerWinsText = new Text("Your wins: " + playerWins);
+    public Text dealerWinsText = new Text("The Dealers wins: " + dealerWins);
     public Button hitMeButton = new Button("Hit Me");
     public Button standButton = new Button("Stand");
     public Button shuffleDeckButton = new Button("Shuffle");
     public Text message = new Text("Welcome to BlackJackJava!\nClick shuffle to start a game!");
     
-    public void retrieveDeck() {
+    public void retrieveDeck(int deckMultiplier) {
         File cardFolder = new File(cardImageFolderPath);
         currentDeck = new ArrayList<String>(Arrays.asList(cardFolder.list()));
+        while (deckMultiplier > 0) {
+            currentDeck.addAll(currentDeck);
+            deckMultiplier -= 1;
+        }
+        System.out.println(currentDeck);
+        
         Collections.shuffle(currentDeck);
     }
     
@@ -63,13 +75,28 @@ public class Java_BlackJack extends Application {
         }
     }
     
-    public void haltGame() {
+    public boolean haltGame(boolean winLossGame, String winner, String loser) {
+        if (winLossGame) {
+            if ("The House".equals(winner)) {
+                dealerWins += 1;
+                //dealerWinsText.setText("The Dealers wins: " + dealerWins);
+            } else {
+                playerWins += 1;
+                //playerWinsText.setText("Your wins: " + playerWins);
+            }
+            message.setText(winner + " won! " + loser + " lost!\n\nClick Shuffle to start a new game.");
+        } else {
+            message.setText("Its a draw!\n\nClick Shuffle to start a new game.");
+        }
         showDealersHand();
+        dealerWinsText.setText("The Dealers wins: " + dealerWins);
+        playerWinsText.setText("Your wins: " + playerWins);
         standButton.setDisable(true);
         hitMeButton.setDisable(true);
+        return false;
     }
     
-    public void checkForWinner(ArrayList<String> hand) {
+    public boolean checkForWinner(ArrayList<String> hand) {
         int mainHandMax = dealersHandMax;
         int otherHandMax = playersHandMax;
         int mainHandMin = dealersHandMin;
@@ -86,26 +113,34 @@ public class Java_BlackJack extends Application {
             otherHandMin = dealersHandMin;
         }
         
-        if (mainHandMin >= 21) {
+        if (mainHandMin == 21) {
             if (otherHandMin == mainHandMin) {
-                message.setText("Its a draw!\n\nClick Shuffle to start a new game.");
-                haltGame();
-            } else if (otherHandMin > mainHandMin) {
-                message.setText(mainHandName + " won! " + otherHandName + " lost!\n\nClick Shuffle to start a new game.");
-                haltGame();
+                return haltGame(false, "", "");
             } else {
-                message.setText(mainHandName + " lost! " + otherHandName + " won!\n\nClick Shuffle to start a new game.");
-                haltGame();
+                return haltGame(true, mainHandName, otherHandName);
             }
         } else if (mainHandMax == 21) {
             if (otherHandMax == mainHandMax) {
-                message.setText("Its a draw!\n\nClick Shuffle to start a new game.");
-                haltGame();
+                return haltGame(false, "", "");
             } else {
-                message.setText(mainHandName + " won! " + otherHandName + " lost!\n\nClick Shuffle to start a new game.");
-                haltGame();
+                return haltGame(true, mainHandName, otherHandName);
+            }
+        } else if (mainHandMin > 21) {
+            if (otherHandMin > mainHandMin) {
+                return haltGame(true, mainHandName, otherHandName);
+            } else {
+                return haltGame(true, otherHandName, mainHandName);
+            }
+        } else if ("The House".equals(mainHandName) && playerStanding == true) {
+            if (mainHandMin > otherHandMin) {
+                if (mainHandMax > otherHandMax) {
+                    return haltGame(true, mainHandName, otherHandName);
+                } else {
+                    return haltGame(true, otherHandName, mainHandName);
+                }
             }
         }
+        return true;
     }
     
     public void increaseHandValue(ArrayList<String> hand, String topCard) {
@@ -142,17 +177,49 @@ public class Java_BlackJack extends Application {
             handContainer.getChildren().add(tempCard);
         }
         tempCard.setTranslateX(30*hand.size()-1);
-        handContainer.setTranslateX(-15*hand.size()-1);
+        handContainer.setTranslateX(-20*hand.size()-1);
         
         increaseHandValue(hand, topCard);
         checkForWinner(hand);
     }
     
     public void dealersTurn() {
-        if (message.getText() == "") {
-            int pickPercentage = 21 - dealersHandMin;
+        if (!standButton.isDisabled()) {
             dealCard(dealersHand, dealersCards);
+            dealersTurn();
         }
+    }
+    
+    public void startGame() {
+        Integer numberOfDecksInt = null;
+        while (numberOfDecksInt == null) {
+            String numberOfDecks = JOptionPane.showInputDialog("How many extra decks would you like for these games of blackjack?\n(you may enter zero for just one deck)");
+            try {
+                numberOfDecksInt = Integer.valueOf(numberOfDecks);
+            } catch(Exception err) {
+                System.out.println(err);
+            }
+        }
+        retrieveDeck(numberOfDecksInt);
+        
+        playerStanding = false;
+        playersHand.clear();
+        dealersHand.clear();
+        playersHandMax = 0;
+        playersHandMin = 0;
+        dealersHandMax = 0;
+        dealersHandMin = 0;
+        dealersCards.getChildren().clear();
+        playersCards.getChildren().clear();
+        standButton.setDisable(false);
+        hitMeButton.setDisable(false);
+        playerTitle.setVisible(true);
+        dealersTitle.setVisible(true);
+        message.setText("");
+        dealCard(playersHand, playersCards);
+        dealCard(dealersHand, dealersCards);
+        dealCard(playersHand, playersCards);
+        dealCard(dealersHand, dealersCards);
     }
 
 
@@ -163,48 +230,29 @@ public class Java_BlackJack extends Application {
         GridPane containerHolder = new GridPane();
         VBox optionMenu = new VBox();
         
-        Text currentCash = new Text("Wallet: $" + walletCount);
-        TextField betInputField = new TextField();
-        Label betInputLabel = new Label("Current Bet: $");
+//        Text currentCash = new Text("Wallet: $" + walletCount);
+//        TextField betInputField = new TextField();
+//        Label betInputLabel = new Label("Current Bet: $");
         
         shuffleDeckButton.setOnAction(e -> {
-            retrieveDeck();
-            playersHand.clear();
-            dealersHand.clear();
-            playersHandMax = 0;
-            playersHandMin = 0;
-            dealersHandMax = 0;
-            dealersHandMin = 0;
-            dealersCards.getChildren().clear();
-            playersCards.getChildren().clear();
-            standButton.setDisable(false);
-            hitMeButton.setDisable(false);
-            playerTitle.setVisible(true);
-            dealersTitle.setVisible(true);
-            message.setText("");
-            dealCard(playersHand, playersCards);
-            dealCard(dealersHand, dealersCards);
-            dealCard(playersHand, playersCards);
-            dealCard(dealersHand, dealersCards);
+            startGame();
         });
         
         
         hitMeButton.setOnAction(e -> {
             dealCard(playersHand, playersCards);
-            dealersTurn();
         });
         
         standButton.setOnAction(e -> {
+            playerStanding = true;
             dealersTurn();
         });
         
         hitMeButton.setDisable(true);
         standButton.setDisable(true);
-        
-        
-        
-        optionMenu.getChildren().addAll(Arrays.asList(currentCash,betInputLabel,
-                betInputField,shuffleDeckButton,hitMeButton,standButton,message));
+
+        optionMenu.getChildren().addAll(Arrays.asList(/*currentCash,betInputLabel,
+                betInputField,*/shuffleDeckButton,hitMeButton,standButton,message));
         optionMenu.setSpacing(20);
         optionMenu.setMinWidth(150);
         optionMenu.setMinHeight(350);
@@ -214,7 +262,8 @@ public class Java_BlackJack extends Application {
         VBox playersCardsContainer = new VBox();
         playerTitle.setVisible(false);
         playersCardsContainer.getChildren().addAll(Arrays.asList(playerTitle,
-                                                                 playersCards));
+                                                                 playersCards,
+                                                                 playerWinsText));
         playersCardsContainer.setMinWidth(300);
         playersCardsContainer.setAlignment(Pos.CENTER);
         
@@ -222,7 +271,8 @@ public class Java_BlackJack extends Application {
         VBox dealersCardsContainer = new VBox();
         dealersTitle.setVisible(false);
         dealersCardsContainer.getChildren().addAll(Arrays.asList(dealersTitle,
-                                                                dealersCards));
+                                                                dealersCards,
+                                                                dealerWinsText));
         dealersCardsContainer.setMinWidth(300);
         dealersCardsContainer.setAlignment(Pos.CENTER);
         
