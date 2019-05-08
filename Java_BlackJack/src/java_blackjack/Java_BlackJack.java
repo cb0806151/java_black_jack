@@ -40,6 +40,73 @@ public class Java_BlackJack extends Application {
     public ArrayList<String> currentDeck = new ArrayList<String>();
     public StackPane playersCards = new StackPane();
     public StackPane dealersCards = new StackPane();
+    public Text playerTitle = new Text("You");
+    Text dealersTitle = new Text("The Dealer");
+    public Button hitMeButton = new Button("Hit Me");
+    public Button standButton = new Button("Stand");
+    public Button shuffleDeckButton = new Button("Shuffle");
+    public Text message = new Text("Welcome to BlackJackJava!\nClick shuffle to start a game!");
+    
+    public void retrieveDeck() {
+        File cardFolder = new File(cardImageFolderPath);
+        currentDeck = new ArrayList<String>(Arrays.asList(cardFolder.list()));
+        Collections.shuffle(currentDeck);
+    }
+    
+    public void showDealersHand() {
+        dealersCards.getChildren().clear();
+        for (int i=0; i<dealersHand.size(); i++) {
+            ImageView tempCard = new ImageView(cardImageFolderName + "/" + dealersHand.get(i));
+            tempCard.setTranslateX(30*i);
+            dealersCards.getChildren().add(tempCard);
+            dealersCards.setTranslateX(-15*i);
+        }
+    }
+    
+    public void haltGame() {
+        showDealersHand();
+        standButton.setDisable(true);
+        hitMeButton.setDisable(true);
+    }
+    
+    public void checkForWinner(ArrayList<String> hand) {
+        int mainHandMax = dealersHandMax;
+        int otherHandMax = playersHandMax;
+        int mainHandMin = dealersHandMin;
+        int otherHandMin = playersHandMin;
+        String mainHandName = "The House";
+        String otherHandName = "You";
+        
+        if (hand == playersHand) {
+            mainHandName = "You";
+            otherHandName = "The House";
+            mainHandMax = playersHandMax;
+            otherHandMax = dealersHandMax;
+            mainHandMin = playersHandMin;
+            otherHandMin = dealersHandMin;
+        }
+        
+        if (mainHandMin >= 21) {
+            if (otherHandMin == mainHandMin) {
+                message.setText("Its a draw!\n\nClick Shuffle to start a new game.");
+                haltGame();
+            } else if (otherHandMin > mainHandMin) {
+                message.setText(mainHandName + " won! " + otherHandName + " lost!\n\nClick Shuffle to start a new game.");
+                haltGame();
+            } else {
+                message.setText(mainHandName + " lost! " + otherHandName + " won!\n\nClick Shuffle to start a new game.");
+                haltGame();
+            }
+        } else if (mainHandMax == 21) {
+            if (otherHandMax == mainHandMax) {
+                message.setText("Its a draw!\n\nClick Shuffle to start a new game.");
+                haltGame();
+            } else {
+                message.setText(mainHandName + " won! " + otherHandName + " lost!\n\nClick Shuffle to start a new game.");
+                haltGame();
+            }
+        }
+    }
     
     public void increaseHandValue(ArrayList<String> hand, String topCard) {
         Integer valueOfHandsLastCard = Integer.valueOf(topCard.substring(0, 2));
@@ -65,27 +132,33 @@ public class Java_BlackJack extends Application {
     public void dealCard(ArrayList<String> hand, StackPane handContainer) {
         String topCard = currentDeck.get(0);
         hand.add(topCard);
-        
-        increaseHandValue(hand, topCard);
-        
         currentDeck.remove(0);
+        
         ImageView tempCard = new ImageView(cardImageFolderName + "/" + hand.get(hand.size()-1));
-        tempCard.setTranslateX(30*hand.size()-1);
-        handContainer.setTranslateX(-15*hand.size()-1);
         if (hand == dealersHand && dealersHand.size() == 1) {
-            handContainer.getChildren().add(new ImageView("otherImages/cardBack.png"));
+            tempCard = new ImageView("otherImages/cardBack.png");
+            handContainer.getChildren().add(tempCard);
         } else {
             handContainer.getChildren().add(tempCard);
         }
+        tempCard.setTranslateX(30*hand.size()-1);
+        handContainer.setTranslateX(-15*hand.size()-1);
+        
+        increaseHandValue(hand, topCard);
+        checkForWinner(hand);
     }
     
+    public void dealersTurn() {
+        if (message.getText() == "") {
+            int pickPercentage = 21 - dealersHandMin;
+            dealCard(dealersHand, dealersCards);
+        }
+    }
+
 
     @Override
     public void start(Stage stage) {
-        File cardFolder = new File(cardImageFolderPath);
-        ArrayList<String> cardImageArray = new ArrayList<String>(Arrays.asList(cardFolder.list()));
-        currentDeck = cardImageArray;
-        Collections.shuffle(currentDeck);
+        
         
         GridPane containerHolder = new GridPane();
         VBox optionMenu = new VBox();
@@ -93,52 +166,53 @@ public class Java_BlackJack extends Application {
         Text currentCash = new Text("Wallet: $" + walletCount);
         TextField betInputField = new TextField();
         Label betInputLabel = new Label("Current Bet: $");
-        Button shuffleDeckButton = new Button("Shuffle");
         
         shuffleDeckButton.setOnAction(e -> {
+            retrieveDeck();
             playersHand.clear();
             dealersHand.clear();
             playersHandMax = 0;
             playersHandMin = 0;
             dealersHandMax = 0;
             dealersHandMin = 0;
+            dealersCards.getChildren().clear();
+            playersCards.getChildren().clear();
+            standButton.setDisable(false);
+            hitMeButton.setDisable(false);
+            playerTitle.setVisible(true);
+            dealersTitle.setVisible(true);
+            message.setText("");
             dealCard(playersHand, playersCards);
             dealCard(dealersHand, dealersCards);
             dealCard(playersHand, playersCards);
             dealCard(dealersHand, dealersCards);
-            System.out.println("players max hand" + String.valueOf(playersHandMax));
-            System.out.println("players min hand" + String.valueOf(playersHandMin));
-            System.out.println("dealers max hand" + String.valueOf(dealersHandMax));
-            System.out.println("dealers min hand" + String.valueOf(dealersHandMin));
         });
         
-        Button hitMeButton = new Button("Hit Me");
         
         hitMeButton.setOnAction(e -> {
             dealCard(playersHand, playersCards);
-            //System.out.println(playersHandMax);
-            //dealersTurn();
+            dealersTurn();
         });
         
-        Button standButton = new Button("Stand");
+        standButton.setOnAction(e -> {
+            dealersTurn();
+        });
         
-        
-        
-        Button newGameButton = new Button("New Game");
+        hitMeButton.setDisable(true);
+        standButton.setDisable(true);
         
         
         
         optionMenu.getChildren().addAll(Arrays.asList(currentCash,betInputLabel,
-                betInputField,shuffleDeckButton,hitMeButton,standButton,
-                newGameButton));
+                betInputField,shuffleDeckButton,hitMeButton,standButton,message));
         optionMenu.setSpacing(20);
         optionMenu.setMinWidth(150);
+        optionMenu.setMinHeight(350);
         optionMenu.setAlignment(Pos.CENTER);
         
         
         VBox playersCardsContainer = new VBox();
-        Text playerTitle = new Text("You");
-        
+        playerTitle.setVisible(false);
         playersCardsContainer.getChildren().addAll(Arrays.asList(playerTitle,
                                                                  playersCards));
         playersCardsContainer.setMinWidth(300);
@@ -146,8 +220,7 @@ public class Java_BlackJack extends Application {
         
         
         VBox dealersCardsContainer = new VBox();
-        Text dealersTitle = new Text("The Dealer");
-     
+        dealersTitle.setVisible(false);
         dealersCardsContainer.getChildren().addAll(Arrays.asList(dealersTitle,
                                                                 dealersCards));
         dealersCardsContainer.setMinWidth(300);
@@ -160,7 +233,7 @@ public class Java_BlackJack extends Application {
         
         
         Scene scene = new Scene(containerHolder, 750, 350);
-        stage.setTitle("Java Black Jack");
+        stage.setTitle("Black Jack Java");
         stage.setScene(scene);
         stage.show();
         
